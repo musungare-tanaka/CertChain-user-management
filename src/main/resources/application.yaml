@@ -1,14 +1,14 @@
 # ── Server ────────────────────────────────────────────────────────────────────
 server:
-  port: 8080
+  port: ${SERVER_PORT:8081}
 
 # ── Datasource (H2 — swap for PostgreSQL/MySQL in production) ─────────────────
 spring:
   datasource:
-    url: jdbc:h2:mem:userdb;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:userdb;DB_CLOSE_DELAY=-1}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
 
   # ── JPA ─────────────────────────────────────────────────────────────────────
   jpa:
@@ -22,10 +22,45 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
 
 # ── JWT ───────────────────────────────────────────────────────────────────────
 app:
   jwt:
-    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-    expiration-ms: 86400000        # 1 day
-    refresh-expiration-ms: 604800000  # 7 days
+    # Base64-encoded secret. Replace in production.
+    secret: ${JWT_SECRET_BASE64:bXN1LWNlcnQtZGV2LWp3dC1zZWNyZXQta2V5LTMyaC1wbHVzLWNoYW5nZS1tZQ==}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  share-base-url: ${SHARE_BASE_URL:http://localhost:3000/verify/share}
+  local-storage:
+    path: ${LOCAL_STORAGE_PATH:/tmp/msu-cert-storage}
+  certificate-signing:
+    # Optional PEM-derived PKCS8/X509 keys in Base64. If blank, ephemeral keys are generated in dev mode.
+    private-key-base64: ${CERT_SIGN_PRIVATE_KEY_BASE64:}
+    public-key-base64: ${CERT_SIGN_PUBLIC_KEY_BASE64:}
+  admin:
+    bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+    email: ${ADMIN_EMAIL:admin@msu.local}
+    password: ${ADMIN_PASSWORD:Admin@12345}
+    full-name: ${ADMIN_FULL_NAME:System Administrator}
+  notifications:
+    email-enabled: ${EMAIL_NOTIFICATIONS_ENABLED:false}
+    from: ${EMAIL_NOTIFICATIONS_FROM:no-reply@msu.local}
+    fail-on-error: ${EMAIL_NOTIFICATIONS_FAIL_ON_ERROR:false}
+
+blockchain:
+  rpc-url: ${BLOCKCHAIN_RPC_URL:http://127.0.0.1:8545/}
+  private-key: ${BLOCKCHAIN_PRIVATE_KEY:0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+  contract-address: ${BLOCKCHAIN_CONTRACT_ADDRESS:0x5FbDB2315678afecb367f032d93F642f64180aa3}
+
+pinata:
+  base-url: ${PINATA_BASE_URL:https://api.pinata.cloud}
+  gateway-url: ${PINATA_GATEWAY_URL:https://gateway.pinata.cloud}
+  jwt: ${PINATA_JWT:}

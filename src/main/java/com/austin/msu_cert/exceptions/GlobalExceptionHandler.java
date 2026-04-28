@@ -1,82 +1,130 @@
 package com.austin.msu_cert.exceptions;
 
-import com.austin.msu_cert.dto.UserDto;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-// ── Custom exception types ───────────────────────────────────────────────────
-
-class UserNotFoundException extends RuntimeException {
-    public UserNotFoundException(String message) { super(message); }
-}
-
-class UserAlreadyExistsException extends RuntimeException {
-    public UserAlreadyExistsException(String message) { super(message); }
-}
-
-class InvalidPasswordException extends RuntimeException {
-    public InvalidPasswordException(String message) { super(message); }
-}
-
-// ── Global exception handler ─────────────────────────────────────────────────
-
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<UserDto.ApiResponse> handleNotFound(UserNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(UserDto.ApiResponse.error(ex.getMessage()));
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiError> handleBadRequest(
+            BadRequestException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.badRequest(ex.getMessage(), request.getRequestURI()));
     }
 
-    @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<UserDto.ApiResponse> handleConflict(UserAlreadyExistsException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(UserDto.ApiResponse.error(ex.getMessage()));
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiError> handleNotFound(
+            ResourceNotFoundException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ApiError.notFound(ex.getMessage(), request.getRequestURI()));
     }
 
-    @ExceptionHandler(InvalidPasswordException.class)
-    public ResponseEntity<UserDto.ApiResponse> handleInvalidPassword(InvalidPasswordException ex) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(UserDto.ApiResponse.error(ex.getMessage()));
-    }
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<UserDto.ApiResponse> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(UserDto.ApiResponse.error("Invalid username/email or password"));
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiError> handleForbidden(
+            ForbiddenException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiError.forbidden(ex.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<UserDto.ApiResponse> handleAccessDenied(AccessDeniedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(UserDto.ApiResponse.error("Access denied"));
+    public ResponseEntity<ApiError> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiError.forbidden(
+                        "You do not have permission to perform this action",
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiError.unauthorized(
+                        "Invalid email or password",
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(
+            DisabledException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiError.forbidden(
+                        "Account is disabled. Your institution may be pending admin approval.",
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(BlockchainException.class)
+    public ResponseEntity<ApiError> handleBlockchain(
+            BlockchainException ex, HttpServletRequest request) {
+        log.error("Blockchain error at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiError.internalError(
+                        "Blockchain operation failed: " + ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        Map<String, String> fieldErrors = new HashMap<>();
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.put(error.getField(), error.getDefaultMessage());
-        }
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", false);
-        response.put("message", "Validation failed");
-        response.put("errors", fieldErrors);
-        return ResponseEntity.badRequest().body(response);
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
+        String errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiError.badRequest(
+                        "Validation failed: " + errors,
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiError> handleMaxUploadSize(
+            MaxUploadSizeExceededException ex, HttpServletRequest request) {
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiError.of(
+                        413, "Payload Too Large",
+                        "File too large. Maximum allowed size is 10MB.",
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<UserDto.ApiResponse> handleGeneral(Exception ex) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(UserDto.ApiResponse.error("An unexpected error occurred: " + ex.getMessage()));
+    public ResponseEntity<ApiError> handleGeneral(
+            Exception ex, HttpServletRequest request) {
+        log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiError.internalError(
+                        "An unexpected error occurred. Please try again.",
+                        request.getRequestURI()
+                ));
     }
 }

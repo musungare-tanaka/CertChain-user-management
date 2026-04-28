@@ -1,10 +1,9 @@
 package com.austin.msu_cert.controller;
 
-import com.austin.msu_cert.dto.UserDto;
+import com.austin.msu_cert.dto.*;
 import com.austin.msu_cert.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,24 +15,41 @@ public class AuthController {
     private final AuthService authService;
 
     /**
-     * POST /api/auth/register
-     * Register a new user account. Returns a JWT on success.
+     * POST /api/auth/register/student
+     * Registers a new student. Account is immediately active.
      */
-    @PostMapping("/register")
-    public ResponseEntity<UserDto.ApiResponse> register(@Valid @RequestBody UserDto.RegisterRequest request) {
-        UserDto.AuthResponse auth = authService.register(request);
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(UserDto.ApiResponse.ok("Account created successfully", auth));
+    @PostMapping("/register/student")
+    public ResponseEntity<ApiResponse<AuthResponse>> registerStudent(
+            @Valid @RequestBody StudentRegisterRequest req
+    ) {
+        AuthResponse response = authService.registerStudent(req);
+        return ResponseEntity.ok(ApiResponse.ok("Student registered successfully", response));
+    }
+
+    /**
+     * POST /api/auth/register/institution
+     * Registers an institution. Account is PENDING until admin approves.
+     */
+    @PostMapping("/register/institution")
+    public ResponseEntity<ApiResponse<InstitutionResponse>> registerInstitution(
+            @Valid @RequestBody InstitutionRegisterRequest req
+    ) {
+        InstitutionResponse response = authService.registerInstitution(req);
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Institution registered. Awaiting admin approval before login is enabled.",
+                response
+        ));
     }
 
     /**
      * POST /api/auth/login
-     * Authenticate and receive a JWT.
+     * Works for STUDENT, INSTITUTION, and ADMIN roles.
      */
     @PostMapping("/login")
-    public ResponseEntity<UserDto.ApiResponse> login(@Valid @RequestBody UserDto.LoginRequest request) {
-        UserDto.AuthResponse auth = authService.login(request);
-        return ResponseEntity.ok(UserDto.ApiResponse.ok("Login successful", auth));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(
+            @Valid @RequestBody LoginRequest req
+    ) {
+        AuthResponse response = authService.login(req);
+        return ResponseEntity.ok(ApiResponse.ok("Login successful", response));
     }
 }

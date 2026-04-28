@@ -97,7 +97,6 @@ public class UserDto {
                     .fullName(user.getFullName())
                     .role(user.getRole().name())
                     .createdAt(user.getCreatedAt())
-                    .updatedAt(user.getUpdatedAt())
                     .build();
         }
     }

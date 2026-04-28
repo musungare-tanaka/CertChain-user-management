@@ -43,7 +43,7 @@ public class UserController {
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails currentUser
     ) {
-        UserDto.UserResponse user = userService.getUserById(id);
+        UserDto.UserResponse user = userService.getUserById(id, currentUser.getUsername());
         return ResponseEntity.ok(UserDto.ApiResponse.ok("User retrieved", user));
     }
 
@@ -57,7 +57,7 @@ public class UserController {
     public ResponseEntity<UserDto.ApiResponse> getMyProfile(
             @AuthenticationPrincipal UserDetails currentUser
     ) {
-        UserDto.UserResponse user = userService.getUserByUsername(currentUser.getUsername());
+        UserDto.UserResponse user = userService.getUserByEmail(currentUser.getUsername());
         return ResponseEntity.ok(UserDto.ApiResponse.ok("Profile retrieved", user));
     }
 
