@@ -26,7 +26,7 @@ public class UserController {
      * Requires ADMIN role.
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<UserDto.ApiResponse> getAllUsers() {
         List<UserDto.UserResponse> users = userService.getAllUsers();
         return ResponseEntity.ok(UserDto.ApiResponse.ok("Users retrieved", users));

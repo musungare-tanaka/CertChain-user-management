@@ -59,6 +59,10 @@ public class CertificateService {
 
         Institution institution = institutionRepository.findById(institutionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Institution not found"));
+        User student = userRepository.findByStudentId(req.getStudentId())
+                .orElseThrow(() -> new BadRequestException(
+                        "Student account not found for ID " + req.getStudentId() + ". The student must be registered."
+                ));
 
         // 1. Hash the PDF bytes (SHA-256 → 32 bytes → bytes32 on-chain)
         byte[] hashBytes = MessageDigest.getInstance("SHA-256").digest(pdfBytes);
@@ -78,6 +82,9 @@ public class CertificateService {
         String certId = (req.getCertId() != null && !req.getCertId().isBlank())
                 ? req.getCertId()
                 : "CERT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        if (certificateRecordRepository.existsById(certId)) {
+            throw new BadRequestException("Verification ID already exists. Please use a different certificate ID.");
+        }
 
         // 4. Send transaction to blockchain
         log.info("Issuing certificate {} on blockchain...", certId);
@@ -112,7 +119,7 @@ public class CertificateService {
         certificateRecordRepository.save(record);
 
         CertificateResponse response = mapToResponse(record);
-        sendIssueNotifications(institution, req.getStudentId(), req.getStudentName(), response);
+        sendIssueNotifications(institution, student, student.getFullName(), response);
         return response;
     }
 
@@ -204,10 +211,9 @@ public class CertificateService {
 
         Tuple2<Boolean, String> result = registry.verifyCertificateByHash(hashBytes).send();
 
-        boolean isValid = result.component1();
         String certId = result.component2();
 
-        if (!isValid || certId.isBlank()) {
+        if (certId == null || certId.isBlank()) {
             return VerifyResponse.builder()
                     .valid(false)
                     .hashMatched(false)
@@ -261,7 +267,7 @@ public class CertificateService {
                 .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certId));
 
         boolean canDownload = switch (requester.getRole()) {
-            case ADMIN -> true;
+            case ADMINISTRATOR, ADMIN -> true;
             case STUDENT -> requester.getStudentId() != null
                     && requester.getStudentId().equals(record.getStudentId());
             case INSTITUTION -> requester.getInstitutionId() != null
@@ -328,7 +334,7 @@ public class CertificateService {
 
     private void sendIssueNotifications(
             Institution institution,
-            String studentId,
+            User student,
             String studentName,
             CertificateResponse certificate
     ) {
@@ -338,12 +344,10 @@ public class CertificateService {
                 certificate
         );
 
-        userRepository.findByStudentId(studentId).ifPresent(student ->
-                emailNotificationService.sendCertificateIssuedToStudent(
-                        student.getEmail(),
-                        studentName,
-                        certificate
-                )
+        emailNotificationService.sendCertificateIssuedToStudent(
+                student.getEmail(),
+                studentName,
+                certificate
         );
     }
 

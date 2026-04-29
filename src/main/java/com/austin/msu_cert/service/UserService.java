@@ -105,7 +105,7 @@ public class UserService {
         User currentUser = userRepository.findByEmail(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("Authenticated user not found"));
 
-        boolean isAdmin = currentUser.getRole() == User.Role.ADMIN;
+        boolean isAdmin = currentUser.isAdministratorRole();
         boolean isOwner = targetUser.getId().equals(currentUser.getId());
 
         if (!isAdmin && !isOwner) {

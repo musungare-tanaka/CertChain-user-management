@@ -60,7 +60,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/certificates/verify/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/certificates/verify/document").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/certificates/share/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasAnyRole("ADMIN", "ADMINISTRATOR")
                         .anyRequest().authenticated()
                 )
 

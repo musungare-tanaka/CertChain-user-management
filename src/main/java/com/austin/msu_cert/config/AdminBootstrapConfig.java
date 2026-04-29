@@ -46,7 +46,7 @@ public class AdminBootstrapConfig {
             var existingByEmail = userRepository.findByEmail(adminEmail);
             if (existingByEmail.isPresent()) {
                 User existing = existingByEmail.get();
-                if (existing.getRole() == User.Role.ADMIN) {
+                if (existing.isAdministratorRole()) {
                     if (!existing.isEnabled()) {
                         existing.setEnabled(true);
                         userRepository.save(existing);
@@ -58,7 +58,7 @@ public class AdminBootstrapConfig {
                 return;
             }
 
-            if (userRepository.existsByRole(User.Role.ADMIN)) {
+            if (userRepository.existsByRole(User.Role.ADMINISTRATOR) || userRepository.existsByRole(User.Role.ADMIN)) {
                 log.info("Admin bootstrap skipped: an admin account already exists");
                 return;
             }
@@ -67,7 +67,7 @@ public class AdminBootstrapConfig {
                     .email(adminEmail)
                     .username(adminEmail)
                     .password(passwordEncoder.encode(adminPassword))
-                    .role(User.Role.ADMIN)
+                    .role(User.Role.ADMINISTRATOR)
                     .fullName(adminFullName)
                     .enabled(true)
                     .build();

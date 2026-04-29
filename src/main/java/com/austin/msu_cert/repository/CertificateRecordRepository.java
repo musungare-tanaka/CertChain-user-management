@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface CertificateRecordRepository extends JpaRepository<CertificateRecord, String> {
     List<CertificateRecord> findByStudentId(String studentId);
     List<CertificateRecord> findByInstitutionId(String institutionId);
+    boolean existsByInstitutionId(String institutionId);
     Optional<CertificateRecord> findByDocumentHash(String documentHash);
 }

@@ -4,6 +4,7 @@ import com.austin.msu_cert.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -14,6 +15,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByStudentId(String studentId);
+
+    List<User> findByInstitutionId(String institutionId);
 
     boolean existsByUsername(String username);
 

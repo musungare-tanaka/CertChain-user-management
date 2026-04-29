@@ -15,6 +15,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -188,6 +191,43 @@ public class CertificateController {
         return ResponseEntity.ok(ApiResponse.ok(result));
     }
 
+    /**
+     * GET /api/certificates/verify/verification-id/{verificationId}
+     * Public alias for verification by verification ID.
+     */
+    @GetMapping("/verify/verification-id/{verificationId}")
+    public ResponseEntity<ApiResponse<VerifyResponse>> verifyByVerificationId(
+            @PathVariable String verificationId
+    ) throws Exception {
+        VerifyResponse result = certificateService.verifyById(verificationId);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /**
+     * GET /api/certificates/verify/number/{certificateNumber}
+     * Public alias for verification by certificate number.
+     */
+    @GetMapping("/verify/number/{certificateNumber}")
+    public ResponseEntity<ApiResponse<VerifyResponse>> verifyByCertificateNumber(
+            @PathVariable String certificateNumber
+    ) throws Exception {
+        VerifyResponse result = certificateService.verifyById(certificateNumber);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
+    /**
+     * GET /api/certificates/verify/qr?value=...
+     * Public alias for verification via QR payload/URL text.
+     */
+    @GetMapping("/verify/qr")
+    public ResponseEntity<ApiResponse<VerifyResponse>> verifyByQrValue(
+            @RequestParam("value") String qrValue
+    ) throws Exception {
+        String resolvedVerificationId = resolveVerificationIdFromQrValue(qrValue);
+        VerifyResponse result = certificateService.verifyById(resolvedVerificationId);
+        return ResponseEntity.ok(ApiResponse.ok(result));
+    }
+
     // ── Public: Verify by uploaded PDF ────────────────────────────────────────
 
     /**
@@ -245,5 +285,43 @@ public class CertificateController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(fileBytes);
+    }
+
+    private String resolveVerificationIdFromQrValue(String rawValue) {
+        String trimmed = rawValue == null ? "" : rawValue.trim();
+        if (trimmed.isBlank()) {
+            return trimmed;
+        }
+
+        try {
+            URI uri = URI.create(trimmed);
+            String query = uri.getQuery();
+            if (query != null && !query.isBlank()) {
+                for (String param : query.split("&")) {
+                    String[] parts = param.split("=", 2);
+                    if (parts.length == 2) {
+                        if ("verificationId".equalsIgnoreCase(parts[0])
+                                || "certId".equalsIgnoreCase(parts[0])
+                                || "certificateId".equalsIgnoreCase(parts[0])) {
+                            return URLDecoder.decode(parts[1], StandardCharsets.UTF_8);
+                        }
+                    }
+                }
+            }
+
+            String path = uri.getPath();
+            if (path != null && !path.isBlank()) {
+                String[] parts = path.split("/");
+                for (int i = parts.length - 1; i >= 0; i--) {
+                    if (!parts[i].isBlank()) {
+                        return URLDecoder.decode(parts[i], StandardCharsets.UTF_8);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+            // Treat raw value as direct verification ID when not a URL.
+        }
+
+        return URLDecoder.decode(trimmed, StandardCharsets.UTF_8);
     }
 }

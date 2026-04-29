@@ -60,6 +60,13 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (isAdministratorRole()) {
+            // Keep both authorities for backward compatibility with existing ADMIN accounts.
+            return List.of(
+                    new SimpleGrantedAuthority("ROLE_ADMIN"),
+                    new SimpleGrantedAuthority("ROLE_ADMINISTRATOR")
+            );
+        }
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
@@ -80,9 +87,15 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() { return enabled; }
 
+    public boolean isAdministratorRole() {
+        return role == Role.ADMIN || role == Role.ADMINISTRATOR;
+    }
+
     public enum Role {
         STUDENT,
         INSTITUTION,
+        ADMINISTRATOR,
+        // Legacy role kept for backward compatibility with existing records.
         ADMIN
     }
 }

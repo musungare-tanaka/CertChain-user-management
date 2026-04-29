@@ -23,10 +23,10 @@ spring:
       enabled: true
       path: /h2-console
   mail:
-    host: ${MAIL_HOST:}
+    host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    username: ${MAIL_USERNAME:musungaretanaka@gmail.com}
+    password: ${MAIL_PASSWORD:llyn hhhf sfci jkgo}
     properties:
       mail.smtp.auth: ${MAIL_SMTP_AUTH:true}
       mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
@@ -38,6 +38,7 @@ app:
     secret: ${JWT_SECRET_BASE64:bXN1LWNlcnQtZGV2LWp3dC1zZWNyZXQta2V5LTMyaC1wbHVzLWNoYW5nZS1tZQ==}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
     refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  verification-base-url: ${VERIFICATION_BASE_URL:http://localhost:3000/verify}
   share-base-url: ${SHARE_BASE_URL:http://localhost:3000/verify/share}
   local-storage:
     path: ${LOCAL_STORAGE_PATH:/tmp/msu-cert-storage}
@@ -52,7 +53,7 @@ app:
     full-name: ${ADMIN_FULL_NAME:System Administrator}
   notifications:
     email-enabled: ${EMAIL_NOTIFICATIONS_ENABLED:false}
-    from: ${EMAIL_NOTIFICATIONS_FROM:no-reply@msu.local}
+    from: ${EMAIL_NOTIFICATIONS_FROM:musungaretanaka@gmail.com}
     fail-on-error: ${EMAIL_NOTIFICATIONS_FAIL_ON_ERROR:false}
 
 blockchain:

@@ -8,8 +8,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface InstitutionRepository extends JpaRepository<Institution, String> {
+    boolean existsByName(String name);
+    boolean existsByNameAndIdNot(String name, String id);
     boolean existsByEmail(String email);
+    boolean existsByEmailAndIdNot(String email, String id);
     boolean existsByRegistrationNumber(String registrationNumber);
+    boolean existsByRegistrationNumberAndIdNot(String registrationNumber, String id);
     Optional<Institution> findByEmail(String email);
     List<Institution> findByStatus(InstitutionStatus status);
 }

@@ -5,6 +5,7 @@ import com.austin.msu_cert.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -28,22 +29,24 @@ public class AuthController {
 
     /**
      * POST /api/auth/register/institution
-     * Registers an institution. Account is PENDING until admin approves.
+     * Legacy endpoint maintained for backward compatibility.
+     * Institution onboarding is administrator-managed.
      */
     @PostMapping("/register/institution")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ADMINISTRATOR')")
     public ResponseEntity<ApiResponse<InstitutionResponse>> registerInstitution(
             @Valid @RequestBody InstitutionRegisterRequest req
     ) {
         InstitutionResponse response = authService.registerInstitution(req);
         return ResponseEntity.ok(ApiResponse.ok(
-                "Institution registered. Awaiting admin approval before login is enabled.",
+                "Institution registered by administrator.",
                 response
         ));
     }
 
     /**
      * POST /api/auth/login
-     * Works for STUDENT, INSTITUTION, and ADMIN roles.
+     * Works for STUDENT, INSTITUTION, ADMIN, and ADMINISTRATOR roles.
      */
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(

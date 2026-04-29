@@ -23,6 +23,9 @@ public class EmailNotificationService {
     @Value("${app.notifications.fail-on-error:false}")
     private boolean failOnError;
 
+    @Value("${app.verification-base-url:http://localhost:3000/verify}")
+    private String verificationBaseUrl;
+
     public EmailNotificationService(ObjectProvider<JavaMailSender> mailSenderProvider) {
         this.mailSenderProvider = mailSenderProvider;
     }
@@ -69,20 +72,30 @@ public class EmailNotificationService {
 
     public void sendCertificateIssuedToStudent(String to, String studentName, CertificateResponse certificate) {
         String subject = "MSU CERT: New Certificate Issued";
+        String verificationId = safe(certificate.getCertId());
+        String verificationLink = safe(verificationBaseUrl) + "?verificationId=" + verificationId;
         String body = """
                 Hello %s,
 
-                A new academic certificate has been issued to your account.
-                Certificate ID: %s
-                Course: %s
-                Institution: %s
+                Your academic certificate has been issued and registered successfully.
+
+                Student Name: %s
+                Certificate Title/Programme: %s
+                Institution Name: %s
+                Verification ID: %s
                 Status: %s
+
+                Verification Instructions:
+                1. Share the Verification ID with employers or verifiers.
+                2. They can verify it at: %s
                 """.formatted(
                 defaultName(studentName),
-                safe(certificate.getCertId()),
+                defaultName(studentName),
                 safe(certificate.getCourseName()),
                 safe(certificate.getInstitutionName()),
-                safe(certificate.getStatus())
+                verificationId,
+                safe(certificate.getStatus()),
+                verificationLink
         );
         sendEmail(to, subject, body);
     }
